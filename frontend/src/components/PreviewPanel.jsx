@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import './PreviewPanel.css'
 
+const API_URL = 'http://localhost:8000'
+
 function PreviewPanel({ html }) {
     const [viewMode, setViewMode] = useState('preview')
 
@@ -12,6 +14,25 @@ function PreviewPanel({ html }) {
         a.download = 'document.html'
         a.click()
         URL.revokeObjectURL(url)
+    }
+
+    const handleExportPdf = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/export/pdf`)
+            if (!response.ok) throw new Error('Export failed')
+
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'document.pdf'
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+        } catch (error) {
+            alert('PDF Export failed: ' + error.message)
+        }
     }
 
     return (
@@ -35,7 +56,12 @@ function PreviewPanel({ html }) {
                     </button>
                     {html && (
                         <button className="control-btn" onClick={handleExport}>
-                            Export
+                            Export HTML
+                        </button>
+                    )}
+                    {html && (
+                        <button className="control-btn" onClick={handleExportPdf}>
+                            Export PDF
                         </button>
                     )}
                 </div>

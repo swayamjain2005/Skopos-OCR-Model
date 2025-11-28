@@ -78,6 +78,15 @@ function UploadPanel({ onUploadSuccess }) {
                 ) : preview ? (
                     <div className="preview-container">
                         <img src={preview} alt="Preview" />
+                        <label className="change-file-btn">
+                            Change File
+                            <input
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp"
+                                onChange={(e) => handleFile(e.target.files[0])}
+                                style={{ display: 'none' }}
+                            />
+                        </label>
                     </div>
                 ) : (
                     <div className="upload-content">

@@ -11,15 +11,28 @@ class OCRService:
         """Process document through Chandra OCR (Florence-2) and return HTML"""
         try:
             print(f"Sending file to OCR: {file_path}")
+            
+            # Handle PDF files
+            if file_path.lower().endswith('.pdf'):
+                print("Detected PDF, converting to image...")
+                image_path = self._convert_pdf_to_image(file_path)
+                file_to_process = image_path
+            else:
+                file_to_process = file_path
+
             print(f"Target URL: {self.ocr_url}")
             
-            with open(file_path, "rb") as f:
+            with open(file_to_process, "rb") as f:
                 # Prepare the file and data payload
                 # Note: 'file' matches the FastAPI endpoint argument name
-                files = {"file": (os.path.basename(file_path), f, "image/jpeg")}
+                files = {"file": (os.path.basename(file_to_process), f, "image/jpeg")}
                 data = {"task_prompt": "<OCR>"} 
                 
                 response = requests.post(self.ocr_url, files=files, data=data)
+            
+            # Clean up temporary image if it was created from PDF
+            if file_path.lower().endswith('.pdf') and os.path.exists(file_to_process):
+                os.remove(file_to_process)
             
             if response.status_code == 200:
                 result = response.json()
@@ -45,6 +58,27 @@ class OCRService:
         except Exception as e:
             print(f"OCR processing error: {e}")
             return self._error_html(str(e))
+
+    def _convert_pdf_to_image(self, pdf_path: str) -> str:
+        """Convert first page of PDF to image"""
+        try:
+            import fitz  # PyMuPDF
+            doc = fitz.open(pdf_path)
+            if doc.page_count < 1:
+                raise Exception("PDF is empty")
+            
+            # Get first page
+            page = doc[0]
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality
+            
+            # Save as image
+            image_path = pdf_path + ".jpg"
+            pix.save(image_path)
+            doc.close()
+            
+            return image_path
+        except Exception as e:
+            raise Exception(f"PDF conversion failed: {str(e)}")
 
     def _text_to_html(self, text: str, filename: str) -> str:
         """Convert raw OCR text to formatted HTML"""

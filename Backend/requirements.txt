@@ -9,3 +9,5 @@ gradio-client
 beautifulsoup4
 Pillow
 requests
+pymupdf
+xhtml2pdf

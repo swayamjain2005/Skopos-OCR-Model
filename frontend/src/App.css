@@ -19,7 +19,6 @@ body {
   background-color: var(--bg-dark);
   color: var(--text-primary);
   min-height: 100vh;
-  overflow: hidden;
 }
 
 .app {
@@ -49,7 +48,7 @@ body {
 .panels-container {
   flex: 1;
   display: grid;
-  grid-template-columns: 350px 1fr 1fr;
+  grid-template-columns: 350px 0.8fr 1.2fr;
   /* Fixed width for chat, equal for others */
   gap: 1px;
   /* Gap for borders */

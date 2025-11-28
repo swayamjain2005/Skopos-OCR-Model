@@ -1,10 +1,12 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import shutil
 import uuid
 from pathlib import Path
+from xhtml2pdf import pisa
+from io import BytesIO
 from services.ocr_service import OCRService
 from services.llm_service import LLMService
 from config import UPLOAD_DIR, MAX_FILE_SIZE, ALLOWED_EXTENSIONS, BACKEND_PORT
@@ -88,6 +90,32 @@ async def chat(request: ChatRequest):
 async def export_html():
     """Export current HTML"""
     return {"html": llm_service.current_html}
+
+@app.get("/api/export/pdf")
+async def export_pdf():
+    """Export current HTML as PDF"""
+    try:
+        html_content = llm_service.current_html
+        if not html_content:
+            raise HTTPException(400, "No content to export")
+            
+        # Create PDF in memory
+        pdf_buffer = BytesIO()
+        pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
+        
+        if pisa_status.err:
+            raise HTTPException(500, "PDF generation failed")
+            
+        pdf_content = pdf_buffer.getvalue()
+        pdf_buffer.close()
+        
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=document.pdf"}
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Export failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

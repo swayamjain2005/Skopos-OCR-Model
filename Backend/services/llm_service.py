@@ -84,7 +84,7 @@ HTML: <complete modified html>"""
         if not self.model:
             return text
             
-        prompt = f"""You are an expert document formatter. Convert the following text (which might be raw OCR output or basic HTML) into a clean, structured, and visually appealing HTML document.
+        prompt = f"""You are an expert document formatter. Your task is to convert the following text (which is raw OCR output) into a clean, structured HTML document that PRESERVES THE ORIGINAL LAYOUT AND FORMATTING as much as possible.
         
         Filename: {filename}
         
@@ -92,18 +92,30 @@ HTML: <complete modified html>"""
         {text}
         
         Instructions:
-        1. Analyze the text to identify headers, tables, lists, and key-value pairs.
-        2. Create a modern, clean HTML structure using semantic tags.
-        3. Use inline CSS for styling to make it look professional (like a real document, e.g., a mark sheet, invoice, or report).
-        4. If there are tables, format them properly with borders, padding, and distinct headers.
-        5. Do NOT include any markdown code blocks (like ```html). Just return the raw HTML code.
-        6. Ensure the HTML is complete with <html>, <head>, and <body> tags.
-        7. If the input is already HTML, improve its structure and styling.
+        1. **Preserve Layout**: Try to maintain the visual structure of the original document. If it looks like a form, use tables or grid layouts. If it's a letter, maintain the header/footer positioning.
+        2. **Semantic HTML**: Use appropriate tags (<h1>-<h6>, <table>, <ul>, <ol>, <p>, <div>).
+        3. **Styling**: Use inline CSS to make it look professional and similar to the original. 
+           - Use fonts like 'Arial', 'Helvetica', or 'Times New Roman' where appropriate.
+           - Add padding, margins, and borders to separate sections.
+           - For tables, ensure borders are visible if they were in the original (or if it helps readability).
+        4. **Tables**: If the input contains tabular data, you MUST format it as an HTML <table> with proper headers (<th>) and rows (<tr>). Add `border-collapse: collapse; width: 100%;` to tables.
+        5. **No Markdown**: Do NOT include any markdown code blocks (like ```html). Just return the raw HTML code.
+        6. **Complete Document**: Ensure the HTML is complete with <html>, <head>, and <body> tags.
+        7. **Inference**: Infer the document type (e.g., Invoice, Resume, Report) and apply standard styling for that type.
         """
         
         try:
             response = self.model.generate_content(prompt)
-            html_content = response.text
+            
+            # Safely extract text from response
+            if response.candidates and response.candidates[0].content.parts:
+                html_content = response.candidates[0].content.parts[0].text
+            else:
+                # Fallback or check for safety blocks
+                if response.prompt_feedback and response.prompt_feedback.block_reason:
+                    print(f"Response blocked: {response.prompt_feedback.block_reason}")
+                    return text
+                html_content = response.text # This might still raise if blocked, but we handled common block cases
             
             # Clean up markdown if present
             if html_content.startswith("```html"):
