@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+langchain
+langchain-google-genai
+langchain-core
+gradio-client
+beautifulsoup4
+Pillow
