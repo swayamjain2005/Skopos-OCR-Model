@@ -85,7 +85,7 @@ Create a `.env` file in the root directory:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-CHANDRA_OCR_URL=http://34.27.210.23:8001
+CHANDRA_OCR_URL=http://34.27.210.23:8001/predict
 BACKEND_PORT=8000
 ```
 
