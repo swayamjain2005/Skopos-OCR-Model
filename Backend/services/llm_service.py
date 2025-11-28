@@ -78,3 +78,42 @@ HTML: <complete modified html>"""
                 "message": f"Error processing request: {str(e)}",
                 "html": self.current_html
             }
+
+    def generate_html_from_text(self, text: str, filename: str) -> str:
+        """Generate structured HTML from raw text using LLM"""
+        if not self.model:
+            return text
+            
+        prompt = f"""You are an expert document formatter. Convert the following text (which might be raw OCR output or basic HTML) into a clean, structured, and visually appealing HTML document.
+        
+        Filename: {filename}
+        
+        Input Text:
+        {text}
+        
+        Instructions:
+        1. Analyze the text to identify headers, tables, lists, and key-value pairs.
+        2. Create a modern, clean HTML structure using semantic tags.
+        3. Use inline CSS for styling to make it look professional (like a real document, e.g., a mark sheet, invoice, or report).
+        4. If there are tables, format them properly with borders, padding, and distinct headers.
+        5. Do NOT include any markdown code blocks (like ```html). Just return the raw HTML code.
+        6. Ensure the HTML is complete with <html>, <head>, and <body> tags.
+        7. If the input is already HTML, improve its structure and styling.
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            html_content = response.text
+            
+            # Clean up markdown if present
+            if html_content.startswith("```html"):
+                html_content = html_content.replace("```html", "", 1)
+            if html_content.startswith("```"):
+                html_content = html_content.replace("```", "", 1)
+            if html_content.endswith("```"):
+                html_content = html_content[:-3]
+                
+            return html_content.strip()
+        except Exception as e:
+            print(f"Error generating HTML: {e}")
+            return text

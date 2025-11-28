@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import shutil
+import uuid
 from pathlib import Path
 from services.ocr_service import OCRService
 from services.llm_service import LLMService
@@ -43,8 +44,11 @@ async def upload_document(file: UploadFile = File(...)):
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(400, f"Invalid file type. Allowed: {ALLOWED_EXTENSIONS}")
     
+    # Generate unique filename to prevent caching
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
     # Save file
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
@@ -57,12 +61,15 @@ async def upload_document(file: UploadFile = File(...)):
         # Process through OCR
         html_result = ocr_service.process_document(file_path)
         
+        # Refine HTML using LLM for better formatting
+        refined_html = llm_service.generate_html_from_text(html_result, file.filename)
+        
         # Set HTML in LLM service
-        llm_service.set_html(html_result)
+        llm_service.set_html(refined_html)
         
         return {
             "success": True,
-            "html": html_result,
+            "html": refined_html,
             "filename": file.filename
         }
     except Exception as e:

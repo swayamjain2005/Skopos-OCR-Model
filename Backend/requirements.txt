@@ -8,3 +8,4 @@ langchain-core
 gradio-client
 beautifulsoup4
 Pillow
+requests
